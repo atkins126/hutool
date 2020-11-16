@@ -3,6 +3,8 @@ package cn.hutool.core.convert;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.convert.impl.ArrayConverter;
 import cn.hutool.core.convert.impl.AtomicBooleanConverter;
+import cn.hutool.core.convert.impl.AtomicIntegerArrayConverter;
+import cn.hutool.core.convert.impl.AtomicLongArrayConverter;
 import cn.hutool.core.convert.impl.AtomicReferenceConverter;
 import cn.hutool.core.convert.impl.BeanConverter;
 import cn.hutool.core.convert.impl.BooleanConverter;
@@ -69,7 +71,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -106,9 +110,9 @@ public class ConverterRegistry implements Serializable {
 	}
 
 	/**
-	 * 获得单例的 {@link ConverterRegistry}
+	 * 获得单例的 ConverterRegistry
 	 *
-	 * @return {@link ConverterRegistry}
+	 * @return ConverterRegistry
 	 */
 	public static ConverterRegistry getInstance() {
 		return SingletonHolder.INSTANCE;
@@ -140,7 +144,7 @@ public class ConverterRegistry implements Serializable {
 	 *
 	 * @param type           转换的目标类型
 	 * @param converterClass 转换器类，必须有默认构造方法
-	 * @return {@link ConverterRegistry}
+	 * @return ConverterRegistry
 	 */
 	public ConverterRegistry putCustom(Type type, Class<? extends Converter<?>> converterClass) {
 		return putCustom(type, ReflectUtil.newInstance(converterClass));
@@ -151,7 +155,7 @@ public class ConverterRegistry implements Serializable {
 	 *
 	 * @param type      转换的目标类型
 	 * @param converter 转换器
-	 * @return {@link ConverterRegistry}
+	 * @return ConverterRegistry
 	 */
 	public ConverterRegistry putCustom(Type type, Converter<?> converter) {
 		if (null == customConverterMap) {
@@ -257,6 +261,7 @@ public class ConverterRegistry implements Serializable {
 			}
 		}
 
+
 		// 特殊类型转换，包括Collection、Map、强转、Array等
 		final T result = convertSpecial(type, rowType, value, defaultValue);
 		if (null != result) {
@@ -269,7 +274,7 @@ public class ConverterRegistry implements Serializable {
 		}
 
 		// 无法转换
-		throw new ConvertException("No Converter for type [{}]", rowType.getName());
+		throw new ConvertException("Can not Converter from [{}] to [{}]", value.getClass().getName(), type.getTypeName());
 	}
 
 	/**
@@ -350,11 +355,7 @@ public class ConverterRegistry implements Serializable {
 		// 数组转换
 		if (rowType.isArray()) {
 			final ArrayConverter arrayConverter = new ArrayConverter(rowType);
-			try {
-				return (T) arrayConverter.convert(value, defaultValue);
-			} catch (Exception e) {
-				// 数组转换失败进行下一步
-			}
+			return (T) arrayConverter.convert(value, defaultValue);
 		}
 
 		// 表示非需要特殊转换的对象
@@ -425,6 +426,10 @@ public class ConverterRegistry implements Serializable {
 		defaultConverterMap.put(WeakReference.class, new ReferenceConverter(WeakReference.class));// since 3.0.8
 		defaultConverterMap.put(SoftReference.class, new ReferenceConverter(SoftReference.class));// since 3.0.8
 		defaultConverterMap.put(AtomicReference.class, new AtomicReferenceConverter());// since 3.0.8
+
+		//AtomicXXXArray，since 5.4.5
+		defaultConverterMap.put(AtomicIntegerArray.class, new AtomicIntegerArrayConverter());
+		defaultConverterMap.put(AtomicLongArray.class, new AtomicLongArrayConverter());
 
 		// 其它类型
 		defaultConverterMap.put(Class.class, new ClassConverter());

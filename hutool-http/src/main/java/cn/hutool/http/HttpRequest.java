@@ -12,7 +12,6 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.body.MultipartBody;
@@ -42,9 +41,6 @@ import java.util.Map;
  * @author Looly
  */
 public class HttpRequest extends HttpBase<HttpRequest> {
-
-	private static final String CONTENT_TYPE_MULTIPART_PREFIX = ContentType.MULTIPART.getValue() + "; boundary=";
-	private static final String CONTENT_TYPE_FILE_TEMPLATE = "Content-Type: {}\r\n\r\n";
 
 	/**
 	 * 设置全局默认的连接和读取超时时长
@@ -157,7 +153,7 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	 * @param url URL
 	 */
 	public HttpRequest(String url) {
-		this(UrlBuilder.ofHttp(url, CharsetUtil.CHARSET_UTF_8));
+		this(UrlBuilder.ofHttp(url));
 	}
 
 	/**
@@ -347,13 +343,6 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	 * @return HttpRequest
 	 */
 	public HttpRequest method(Method method) {
-//		if (Method.PATCH == method) {
-//			this.method = Method.POST;
-//			this.header("X-HTTP-Method-Override", "PATCH");
-//		} else {
-//			this.method = method;
-//		}
-
 		this.method = method;
 		return this;
 	}
@@ -388,7 +377,7 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	public boolean isKeepAlive() {
 		String connection = header(Header.CONNECTION);
 		if (connection == null) {
-			return !httpVersion.equalsIgnoreCase(HTTP_1_0);
+			return false == HTTP_1_0.equalsIgnoreCase(httpVersion);
 		}
 
 		return false == "close".equalsIgnoreCase(connection);
@@ -548,6 +537,20 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	public HttpRequest form(Map<String, Object> formMap) {
 		if (MapUtil.isNotEmpty(formMap)) {
 			formMap.forEach(this::form);
+		}
+		return this;
+	}
+
+	/**
+	 * 设置map&lt;String, String&gt;类型表单数据
+	 *
+	 * @param formMapStr 表单内容
+	 * @return this
+	 * @since 5.6.7
+	 */
+	public HttpRequest formStr(Map<String, String> formMapStr) {
+		if (MapUtil.isNotEmpty(formMapStr)) {
+			formMapStr.forEach(this::form);
 		}
 		return this;
 	}
@@ -792,19 +795,6 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	}
 
 	/**
-	 * 是否对URL中的参数进行编码
-	 *
-	 * @param isEncodeUrlParams 是否对URL中的参数进行编码
-	 * @return this
-	 * @since 4.4.1
-	 * @deprecated 编码自动完成，无需设置
-	 */
-	@Deprecated
-	public HttpRequest setEncodeUrlParams(boolean isEncodeUrlParams) {
-		return this;
-	}
-
-	/**
 	 * 设置是否打开重定向，如果打开默认重定向次数为2<br>
 	 * 此方法效果与{@link #setMaxRedirectCount(int)} 一致
 	 *
@@ -1009,6 +999,17 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	}
 
 	/**
+	 * 令牌验证，生成的头类似于："Authorization: Bearer XXXXX"，一般用于JWT
+	 *
+	 * @param token 令牌内容
+	 * @return HttpRequest
+	 * @since 5.5.3
+	 */
+	public HttpRequest bearerAuth(String token) {
+		return auth("Bearer " + token);
+	}
+
+	/**
 	 * 验证，简单插入Authorization头
 	 *
 	 * @param content 验证内容
@@ -1053,10 +1054,10 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 
 		this.httpConnection = HttpConnection
 				.create(this.url.toURL(this.urlHandler), this.proxy)//
-				.setMethod(this.method)//
-				.setHttpsInfo(this.hostnameVerifier, this.ssf)//
 				.setConnectTimeout(this.connectionTimeout)//
 				.setReadTimeout(this.readTimeout)//
+				.setMethod(this.method)//
+				.setHttpsInfo(this.hostnameVerifier, this.ssf)//
 				// 定义转发
 				.setInstanceFollowRedirects(this.maxRedirectCount > 0)
 				// 流方式上传数据
@@ -1094,9 +1095,9 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 	}
 
 	/**
-	 * 调用转发，如果需要转发返回转发结果，否则返回<code>null</code>
+	 * 调用转发，如果需要转发返回转发结果，否则返回{@code null}
 	 *
-	 * @return {@link HttpResponse}，无转发返回 <code>null</code>
+	 * @return {@link HttpResponse}，无转发返回 {@code null}
 	 */
 	private HttpResponse sendRedirectIfPossible() {
 		if (this.maxRedirectCount < 1) {
@@ -1116,7 +1117,7 @@ public class HttpRequest extends HttpBase<HttpRequest> {
 			}
 
 			if (responseCode != HttpURLConnection.HTTP_OK) {
-				if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
+				if (HttpStatus.isRedirected(responseCode)) {
 					setUrl(httpConnection.header(Header.LOCATION));
 					if (redirectCount < this.maxRedirectCount) {
 						redirectCount++;

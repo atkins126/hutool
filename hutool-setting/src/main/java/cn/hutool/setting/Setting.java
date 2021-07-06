@@ -515,12 +515,12 @@ public class Setting extends AbsSetting implements Map<String, String> {
 	/**
 	 * 将键值对加入到对应分组中
 	 *
-	 * @param group 分组
 	 * @param key   键
+	 * @param group 分组
 	 * @param value 值
 	 * @return 此key之前存在的值，如果没有返回null
 	 */
-	public String put(String group, String key, String value) {
+	public String putByGroup(String key, String group, String value) {
 		return this.groupedMap.put(group, key, value);
 	}
 
@@ -616,15 +616,17 @@ public class Setting extends AbsSetting implements Map<String, String> {
 	}
 
 	/**
-	 * 将键值对加入到对应分组中
+	 * 将键值对加入到对应分组中<br>
+	 * 此方法用于与getXXX统一参数顺序
 	 *
-	 * @param group 分组
 	 * @param key   键
+	 * @param group 分组
 	 * @param value 值
 	 * @return 此key之前存在的值，如果没有返回null
+	 * @since 5.5.7
 	 */
-	public Setting set(String group, String key, String value) {
-		this.put(group, key, value);
+	public Setting setByGroup(String key, String group, String value) {
+		this.putByGroup(key, group, value);
 		return this;
 	}
 

@@ -302,7 +302,7 @@ public class TypeUtil {
 	 * @return 是否含有泛型变量
 	 * @since 4.5.7
 	 */
-	public static boolean hasTypeVeriable(Type... types) {
+	public static boolean hasTypeVariable(Type... types) {
 		for (Type type : types) {
 			if (type instanceof TypeVariable) {
 				return true;
@@ -379,7 +379,7 @@ public class TypeUtil {
 		Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
 
 		// 泛型对象中含有未被转换的泛型变量
-		if (TypeUtil.hasTypeVeriable(actualTypeArguments)) {
+		if (TypeUtil.hasTypeVariable(actualTypeArguments)) {
 			actualTypeArguments = getActualTypes(type, parameterizedType.getActualTypeArguments());
 			if (ArrayUtil.isNotEmpty(actualTypeArguments)) {
 				// 替换泛型变量为实际类型，例如List<T>变为List<String>

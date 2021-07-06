@@ -1,5 +1,9 @@
 package cn.hutool.core.convert;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateException;
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.core.util.ByteUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -9,7 +13,9 @@ import org.junit.Test;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLongArray;
 
@@ -189,8 +195,8 @@ public class ConvertTest {
 	}
 
 	@Test
-	public void toListTest(){
-		List<String> list = Arrays.asList("1","2");
+	public void toListTest() {
+		List<String> list = Arrays.asList("1", "2");
 		String str = Convert.toStr(list);
 		List<String> list2 = Convert.toList(String.class, str);
 		Assert.assertEquals("1", list2.get(0));
@@ -226,6 +232,13 @@ public class ConvertTest {
 	}
 
 	@Test
+	public void numberToByteArrayTest(){
+		// 测试Serializable转换为bytes，调用序列化转换
+		final byte[] bytes = Convert.toPrimitiveByteArray(12L);
+		Assert.assertArrayEquals(ByteUtil.longToBytes(12L), bytes);
+	}
+
+	@Test
 	public void toAtomicIntegerArrayTest(){
 		String str = "1,2";
 		final AtomicIntegerArray atomicIntegerArray = Convert.convert(AtomicIntegerArray.class, str);
@@ -242,7 +255,7 @@ public class ConvertTest {
 	@Test
 	public void toClassTest(){
 		final Class<?> convert = Convert.convert(Class.class, "cn.hutool.core.convert.ConvertTest.Product");
-		Assert.assertEquals(Product.class, convert);
+		Assert.assertSame(Product.class, convert);
 	}
 
 	@Data
@@ -261,6 +274,13 @@ public class ConvertTest {
 		Assert.assertEquals(1, integer.intValue());
 	}
 
+	@Test
+	public void toSetTest(){
+		final Set<Integer> result = Convert.convert(new TypeReference<Set<Integer>>() {
+		}, "1,2,3");
+		Assert.assertEquals(CollUtil.set(false, 1,2,3), result);
+	}
+
 	@Getter
 	public enum BuildingType {
 		PING(1, "平层"),
@@ -277,5 +297,17 @@ public class ConvertTest {
 			this.id = id;
 			this.name = name;
 		}
+	}
+
+	@Test(expected = DateException.class)
+	public void toDateTest(){
+		// 默认转换失败报错而不是返回null
+		Convert.convert(Date.class, "aaaa");
+	}
+
+	@Test
+	public void toDateTest2(){
+		final Date date = Convert.toDate("2021-01");
+		Assert.assertNull(date);
 	}
 }

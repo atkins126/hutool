@@ -3,6 +3,7 @@ package cn.hutool.core.convert.impl;
 import cn.hutool.core.convert.AbstractConverter;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ByteUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -21,16 +22,16 @@ import java.util.function.Function;
  * 数字转换器<br>
  * 支持类型为：<br>
  * <ul>
- * <li><code>java.lang.Byte</code></li>
- * <li><code>java.lang.Short</code></li>
- * <li><code>java.lang.Integer</code></li>
- * <li><code>java.util.concurrent.atomic.AtomicInteger</code></li>
- * <li><code>java.lang.Long</code></li>
- * <li><code>java.util.concurrent.atomic.AtomicLong</code></li>
- * <li><code>java.lang.Float</code></li>
- * <li><code>java.lang.Double</code></li>
- * <li><code>java.math.BigDecimal</code></li>
- * <li><code>java.math.BigInteger</code></li>
+ * <li>{@code java.lang.Byte}</li>
+ * <li>{@code java.lang.Short}</li>
+ * <li>{@code java.lang.Integer}</li>
+ * <li>{@code java.util.concurrent.atomic.AtomicInteger}</li>
+ * <li>{@code java.lang.Long}</li>
+ * <li>{@code java.util.concurrent.atomic.AtomicLong}</li>
+ * <li>{@code java.lang.Float}</li>
+ * <li>{@code java.lang.Double}</li>
+ * <li>{@code java.math.BigDecimal}</li>
+ * <li>{@code java.math.BigInteger}</li>
  * </ul>
  *
  * @author Looly
@@ -80,15 +81,25 @@ public class NumberConverter extends AbstractConverter<Number> {
 				return BooleanUtil.toByteObj((Boolean) value);
 			}
 			final String valueStr = toStrFunc.apply(value);
-			return StrUtil.isBlank(valueStr) ? null : Byte.valueOf(valueStr);
+			try{
+				return StrUtil.isBlank(valueStr) ? null : Byte.valueOf(valueStr);
+			} catch (NumberFormatException e){
+				return NumberUtil.parseNumber(valueStr).byteValue();
+			}
 		} else if (Short.class == targetType) {
 			if (value instanceof Number) {
 				return ((Number) value).shortValue();
 			} else if (value instanceof Boolean) {
 				return BooleanUtil.toShortObj((Boolean) value);
+			} else if (value instanceof byte[]){
+				return ByteUtil.bytesToShort((byte[]) value);
 			}
 			final String valueStr = toStrFunc.apply((value));
-			return StrUtil.isBlank(valueStr) ? null : Short.valueOf(valueStr);
+			try{
+				return StrUtil.isBlank(valueStr) ? null : Short.valueOf(valueStr);
+			} catch (NumberFormatException e){
+				return NumberUtil.parseNumber(valueStr).shortValue();
+			}
 		} else if (Integer.class == targetType) {
 			if (value instanceof Number) {
 				return ((Number) value).intValue();
@@ -100,6 +111,8 @@ public class NumberConverter extends AbstractConverter<Number> {
 				return (int) ((Calendar) value).getTimeInMillis();
 			} else if (value instanceof TemporalAccessor) {
 				return (int) DateUtil.toInstant((TemporalAccessor) value).toEpochMilli();
+			} else if (value instanceof byte[]){
+				return ByteUtil.bytesToInt((byte[]) value);
 			}
 			final String valueStr = toStrFunc.apply((value));
 			return StrUtil.isBlank(valueStr) ? null : NumberUtil.parseInt(valueStr);
@@ -121,6 +134,8 @@ public class NumberConverter extends AbstractConverter<Number> {
 				return ((Calendar) value).getTimeInMillis();
 			} else if (value instanceof TemporalAccessor) {
 				return DateUtil.toInstant((TemporalAccessor) value).toEpochMilli();
+			}else if (value instanceof byte[]){
+				return ByteUtil.bytesToLong((byte[]) value);
 			}
 			final String valueStr = toStrFunc.apply((value));
 			return StrUtil.isBlank(valueStr) ? null : NumberUtil.parseLong(valueStr);
@@ -144,18 +159,21 @@ public class NumberConverter extends AbstractConverter<Number> {
 				return ((Number) value).floatValue();
 			} else if (value instanceof Boolean) {
 				return BooleanUtil.toFloatObj((Boolean) value);
+			} else if (value instanceof byte[]){
+				return (float)ByteUtil.bytesToDouble((byte[]) value);
 			}
 			final String valueStr = toStrFunc.apply((value));
-			return StrUtil.isBlank(valueStr) ? null : Float.valueOf(valueStr);
-
+			return StrUtil.isBlank(valueStr) ? null : NumberUtil.parseFloat(valueStr);
 		} else if (Double.class == targetType) {
 			if (value instanceof Number) {
 				return ((Number) value).doubleValue();
 			} else if (value instanceof Boolean) {
 				return BooleanUtil.toDoubleObj((Boolean) value);
+			} else if (value instanceof byte[]){
+				return ByteUtil.bytesToDouble((byte[]) value);
 			}
 			final String valueStr = toStrFunc.apply((value));
-			return StrUtil.isBlank(valueStr) ? null : Double.valueOf(valueStr);
+			return StrUtil.isBlank(valueStr) ? null : NumberUtil.parseDouble(valueStr);
 		} else if (DoubleAdder.class == targetType) {
 			//jdk8 新增
 			final Number number = convert(value, Long.class, toStrFunc);
@@ -195,6 +213,8 @@ public class NumberConverter extends AbstractConverter<Number> {
 			return NumberUtil.toBigDecimal((Number) value);
 		} else if (value instanceof Boolean) {
 			return new BigDecimal((boolean) value ? 1 : 0);
+		} else if (value instanceof byte[]){
+			return NumberUtil.toBigDecimal(ByteUtil.bytesToDouble((byte[]) value));
 		}
 
 		//对于Double类型，先要转换为String，避免精度问题
@@ -215,6 +235,8 @@ public class NumberConverter extends AbstractConverter<Number> {
 			return BigInteger.valueOf((Long) value);
 		} else if (value instanceof Boolean) {
 			return BigInteger.valueOf((boolean) value ? 1 : 0);
+		} else if (value instanceof byte[]){
+			return BigInteger.valueOf(ByteUtil.bytesToLong((byte[]) value));
 		}
 
 		return NumberUtil.toBigInteger(toStrFunc.apply(value));

@@ -3,6 +3,7 @@ package cn.hutool.core.date;
 import cn.hutool.core.comparator.CompareUtil;
 import cn.hutool.core.convert.NumberChineseFormatter;
 import cn.hutool.core.date.format.FastDateParser;
+import cn.hutool.core.date.format.GlobalCustomFormat;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -132,6 +133,46 @@ public class CalendarUtil {
 	 */
 	public static Calendar endOfSecond(Calendar calendar) {
 		return ceiling(calendar, DateField.SECOND);
+	}
+
+	/**
+	 * 获取某小时的开始时间
+	 *
+	 * @param calendar 日期 {@link Calendar}
+	 * @return {@link Calendar}
+	 */
+	public static Calendar beginOfHour(Calendar calendar) {
+		return truncate(calendar, DateField.HOUR_OF_DAY);
+	}
+
+	/**
+	 * 获取某小时的结束时间
+	 *
+	 * @param calendar 日期 {@link Calendar}
+	 * @return {@link Calendar}
+	 */
+	public static Calendar endOfHour(Calendar calendar) {
+		return ceiling(calendar, DateField.HOUR_OF_DAY);
+	}
+
+	/**
+	 * 获取某分钟的开始时间
+	 *
+	 * @param calendar 日期 {@link Calendar}
+	 * @return {@link Calendar}
+	 */
+	public static Calendar beginOfMinute(Calendar calendar) {
+		return truncate(calendar, DateField.MINUTE);
+	}
+
+	/**
+	 * 获取某分钟的结束时间
+	 *
+	 * @param calendar 日期 {@link Calendar}
+	 * @return {@link Calendar}
+	 */
+	public static Calendar endOfMinute(Calendar calendar) {
+		return ceiling(calendar, DateField.MINUTE);
 	}
 
 	/**
@@ -310,8 +351,8 @@ public class CalendarUtil {
 	 *
 	 * <p>此方法检查两个Calendar的毫秒数时间戳是否相同。</p>
 	 *
-	 * @param date1  时间1
-	 * @param date2  时间2
+	 * @param date1 时间1
+	 * @param date2 时间2
 	 * @return 两个Calendar时间戳是否相同。如果两个时间都为{@code null}返回true，否则有{@code null}返回false
 	 * @since 5.3.11
 	 */
@@ -614,6 +655,15 @@ public class CalendarUtil {
 		calendar.setLenient(lenient);
 
 		for (final String parsePattern : parsePatterns) {
+			if(GlobalCustomFormat.isCustomFormat(parsePattern)){
+				final Date parse = GlobalCustomFormat.parse(str, parsePattern);
+				if(null == parse){
+					continue;
+				}
+				calendar.setTime(parse);
+				return calendar;
+			}
+
 			final FastDateParser fdp = new FastDateParser(parsePattern, tz, lcl);
 			calendar.clear();
 			try {
